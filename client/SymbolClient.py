@@ -41,9 +41,14 @@ class AccountInfo:
 
 
 class SymbolClient:
-    def __init__(self, host):
-        self.session = create_http_session()
+    def __init__(self, host, port=3000, **kwargs):
+        self.session = create_http_session(**kwargs)
         self.node_host = host
+        self.node_port = port
+
+    @staticmethod
+    def from_node_info_dict(dict_node_info, **kwargs):
+       return None if not dict_node_info['roles'] & 2 else SymbolClient(dict_node_info['host'], 3000, **kwargs)
 
     def get_chain_height(self):
         json_response = self._get_json('chain/info')
@@ -52,6 +57,14 @@ class SymbolClient:
     def get_finalization_epoch(self):
         json_response = self._get_json('chain/info')
         return int(json_response['latestFinalizedBlock']['finalizationEpoch'])
+
+    def get_node_info(self):
+        json_response = self._get_json('node/info')
+        return json_response
+
+    def get_peers(self):
+        json_response = self._get_json('node/peers')
+        return json_response
 
     def get_account_info(self, address):
         json_response = self._get_json('accounts/{}'.format(address))
@@ -203,4 +216,4 @@ class SymbolClient:
 
     def _get_json(self, rest_path):
         json_http_headers = {'Content-type': 'application/json'}
-        return self.session.get('http://{}:3000/{}'.format(self.node_host, rest_path), headers=json_http_headers).json()
+        return self.session.get('http://{}:{}/{}'.format(self.node_host, self.node_port, rest_path), headers=json_http_headers).json()

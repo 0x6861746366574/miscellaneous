@@ -26,10 +26,15 @@ class AccountInfo:
 
 
 class NemClient:
-    def __init__(self, host, port=7890):
-        self.session = create_http_session()
+    def __init__(self, host, port=7890, **kwargs):
+        self.session = create_http_session(**kwargs)
         self.node_host = host
         self.node_port = port
+
+    @staticmethod
+    def from_node_info_dict(dict_node_info, **kwargs):
+        dict_endpoint = dict_node_info['endpoint']
+        return NemClient(dict_endpoint['host'], dict_endpoint['port'], **kwargs)
 
     def get_chain_height(self):
         json_response = self._get_json('chain/height')
@@ -39,9 +44,13 @@ class NemClient:
         json_response = self._post_json('block/at/public', {'height': height})
         return json_response['signer']
 
-    def get_peers(self):
-        json_response = self._get_json('node/peer-list/all')
+    def get_node_info(self):
+        json_response = self._get_json('node/info')
         return json_response
+
+    def get_peers(self):
+        json_response = self._get_json('node/peer-list/active')
+        return json_response['data']
 
     def get_account_info(self, address, forwarded=False):
         json_response = self._get_json('account/get{}?address={}'.format('/forwarded' if forwarded else '', address))
@@ -144,7 +153,7 @@ class NemClient:
 
     def _get_json(self, rest_path):
         json_http_headers = {'Content-type': 'application/json'}
-        return self.session.get('http://{}:{}/{}'.format(self.node_host, self.node_port, rest_path), headers=json_http_headers).json()
+        return self.session.get('http://{}:7890/{}'.format(self.node_host, rest_path), headers=json_http_headers).json()
 
     def _post_json(self, rest_path, params):
         json_http_headers = {'Content-type': 'application/json'}
